@@ -1,0 +1,157 @@
+---
+title: "Plantilla"
+author: "wchavarria@tigo.com.gt"
+date: "2019-11-12"
+output: 
+  rmdformats::readthedown:
+    css: custom.css
+    highlight: haddock
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo        = TRUE, 
+                      include     = TRUE,
+                      cache       = FALSE,
+                      fig.align   = 'center',
+                      message     = FALSE,
+                      warning     = FALSE, 
+                      comment     = NA, 
+                      highlight   = TRUE,
+                      strip.white = TRUE)
+```
+
+
+```{r}
+import::from(magrittr, "%T>%", "%$%", .into = "operadores")
+import::from(zeallot, `%<-%`)
+import::from(fs, dir_ls)
+pacman::p_load(janitor, tidyverse)
+```
+
+
+```{r}
+options(pillar.sigfig    = 5,
+        tibble.print_min = 30,
+        scipen = 999,
+        digits = 7,
+        readr.show_col_types = FALSE,
+        dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+archivos <- dir_ls(path = ".", glob = "*.csv")
+arg <- list(lazy = F, name_repair = make_clean_names)
+c(eventos, sitios) %<-% map(archivos, ~ exec("read_csv", file = .x, !!!lista) |> 
+                              mutate(across(where(is.character), toupper)))
+```
+
+```{r}
+por_sitio <- eventos |>
+ group_by(sitio) |>
+ summarise(fallas = n()) |> 
+ arrange(desc(fallas))
+```
+
+```{r}
+frecuencia_eventos <- sitios |> 
+ left_join(por_sitio, by = "sitio") |> 
+ mutate(across(where(is.numeric), replace_na, 0),
+        prob_falla = fallas / sum(fallas))
+```
+
+# Modelo
+
+```{r}
+sitios_muestreados  <- 30
+poblacion_sitios_tx <- 150
+fallas_cuatrimestral <- 68
+media_corriente_operacion <- 102.68  # amperios
+media_corriente_en_falla  <- 117.32  # amperios
+voltaje_operacion   <- 120
+duracion_promedio   <- 36.75   # horas en promedio
+costo_kilowatts_hra <- 1.306812 # quetzales
+amp_adicionales <- media_corriente_en_falla - media_corriente_operacion # 14.64 amperios
+```
+
+
+```{r}
+kwh_adicional <- (amp_adicionales * voltaje_operacion * duracion_promedio) / 1000  # 64.56 kwh adicionales en promedio x evento
+```
+
+```{r}
+costo_por_evento <- costo_kilowatts_hra * kwh_adicional  # Q 84.37
+```
+
+
+## Valor esperado
+
+```{r}
+frecuencia_eventos
+```
+
+
+Podríamos considerar la media simple de fallas en los 30 sitios muestreados como medida del
+punto central.  En este caso, la media simple del número de fallas sería:
+
+```{r}
+mean(frecuencia_eventos$fallas)
+```
+
+Este valor no haría sentido, ya que al calcular la media de esta manera no estaríamos
+tomando en cuenta el el hecho de que el 43% de las fallas en estos sitios muestreados no
+tuvieron ninguna falla, veamos:
+
+```{r}
+frecuencia_eventos |> 
+  summarise(porcentaje_sin_fallas = mean(fallas == 0))
+```
+
+Para obtener una medida sensata del punto central, será necesario ponderar los distintos
+resultados posibles por las probabilidades que ocurran.
+
+$$E\left ( X \right ) = \mu = \sum_{x}^{} xP(x)$$
+Esto se calcula debido a que, con base a la muestra de 30 sitios en un periodo de 4 meses,
+el comportamiento de las fallas indica que se espera que se den 7 fallas por sitio en ese
+periódo.
+
+```{r}
+valor_esperado_fallas <- frecuencia_eventos |>
+  summarise(esperanza_fallas  = round(sum(fallas * prob_falla))) |> 
+  pull(esperanza_fallas)
+           
+```
+
+Los registros indican que hay una media de 7 fallas por trimestre por sitio, por lo que el
+promedio anual sería ese valor multiplicado por los 4 trimestres que tiene el año.
+
+```{r}
+costo_promedio_evento <- valor_esperado_fallas * costo_por_evento  # en cada cuatrimestre
+```
+
+Al multiplicar por tres estamos anualizando
+
+```{r}
+(costo_promedio_evento * poblacion_sitios_tx * 3) / 7.8  # $ 34K costo anual de fallas en 150 sitios
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Poisson
+
+Los registros indican que una media de 7 fallas

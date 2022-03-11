@@ -1,0 +1,61 @@
+\begin{appendices}
+
+\chapter{Análisis Estadístico Complementario}
+
+\section{Bondad de Ajuste}
+\label{appendix:bondad}
+
+<<gof>>=
+validar_gof(df = datos, tipodis = tipodis) |> tabla("GOF")
+@
+
+\section{Glosario}
+
+\begin{table}[H]
+ \renewcommand{\arraystretch}{2}
+ \footnotesize
+     \centering
+
+     \begin{tabular}{m{3cm} M{12cm} }
+     
+          \textbf{Abreviación} & \\
+          
+          \textbf{API} & Interfaz de programación de aplicaciones, conocida
+          también por la sigla API, en inglés, Application Programming
+          Interface, es un conjunto de subrutinas, funciones y procedimientos
+          que ofrece cierta biblioteca para ser utilizada por otro software como
+          una capa de abstracción. \\
+          
+          \textbf{Timestamp} & Secuencia de caracteres que denotan la hora y
+          fecha (o alguna de ellas) en la/s que ocurrió determinado evento.\\
+          
+          \textbf{STL} & Descomposición estacional y de tendencias usando Loess,
+          conocido también por las siglas STL, en inglés "Seasonal and Trend
+          decomposition using Loess".\\
+          
+          \textbf{Rack} & En instalaciones de telecomunicaciones el armario o
+          rack de comunicaciones es un soporte metálico cuya función es albergar
+          los equipos informáticos, el equipamiento electrónico y el de
+          comunicaciones.\\
+          
+          \textbf{Pasillo frío} & Las filas compuestas por frentes de racks se
+          llaman pasillos fríos. Por lo general, los pasillos fríos se enfrentan
+          a los conductos de salida del aire acondicionado.\\
+          
+          \textbf{Pasillo caliente} & Las filas de racks y/o gabinetes en donde
+          se desfoga el aire caliente se llaman pasillos calientes. Estos, por
+          lo general, se conectan a los ductos de retorno del aire acondicionado.\\
+
+          \end{tabular}
+          
+ \end{table}
+
+\section{Código}
+\label{appendix:allcode}
+<<eval=FALSE, ref.label=all_labels(), echo=TRUE>>=
+
+@
+
+\end{appendices}
+
+\clearpage
