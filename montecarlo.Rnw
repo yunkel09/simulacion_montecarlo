@@ -132,7 +132,18 @@ BoldItalicFont = Souvenir-BoldItalic.otf]
 \newcommand{\va}[1]{\textcolor{cafe}{\texttt{\textbf{#1}}}}
 \newcommand{\ro}[1]{\textcolor{rojo}{\textbf{#1}}}
 \newcommand{\al}[1]{\raisebox{0pt}[\dimexpr\height#1\baselineskip\relax]}
+\newcommand{\fte}[1]{\floatfoot*{\textit{\scriptsize{Fuente: #1}}}}
 % =============================================================================
+
+\usepackage{siunitx}
+\sisetup
+  {
+    exponent-to-prefix = true,
+    round-mode         = places,
+    round-precision    = 2,
+    scientific-notation = engineering,
+    zero-decimal-to-integer = false,
+  }
 
 
 % PERSONALIZAR TABLA DE CONTENIDO (TOC) ========================================
@@ -337,7 +348,7 @@ BoldItalicFont = Souvenir-BoldItalic.otf]
 
 <<include=FALSE>>=
 library(knitr)
-opts_chunk$set(echo        = TRUE, 
+opts_chunk$set(echo        = FALSE, 
                include     = TRUE,
                cache       = FALSE,
                fig.align   = 'center',
@@ -371,7 +382,9 @@ knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackag
                                        x, fixed = TRUE)})
 
 # cargar paquetes
-import::from(magrittr, "%T>%", "%$%", .into = "operadores")
+import::from(magrittr, "%T>%", "%$%", "%<>%", .into = "operadores")
+import::from(zeallot, `%<-%`)
+import::from(fs, dir_ls)
 import::from(kableExtra, .except = "group_rows")
 import::from(cowplot, .except = "stamp")
 import::from(colorblindr, scale_fill_OkabeIto, palette_OkabeIto)
@@ -426,6 +439,7 @@ resumir <- function(.df) {
   base = NULL,
   numeric = sfl(media   = ~ mean(., na.rm = TRUE),
                 mediana = ~ median(., na.rm = TRUE),
+                desviacion  = ~ sd(., na.rm = TRUE),
                 maximo  = ~ max(., na.rm = TRUE),
                 minimo  = ~ min(., na.rm = TRUE)), append = F)
  my_skim(.df) |> 
@@ -566,12 +580,37 @@ scoring_gof <- function(tabla_gof) {
   filter(puntuacion == max(puntuacion)) |> 
   ungroup()
 }
+
+# cargar set de datos
+archivos <- dir_ls(path = ".", glob = "*.csv")
+arg <- list(lazy = F, name_repair = make_clean_names)
+c(costos, eventos, sitios) %<-% map(archivos, ~ exec("read_csv", file = .x, !!!arg) |> 
+                              mutate(across(where(is.character), toupper)))
+
+costos_kwh <- costos |>
+ rowwise() |> 
+ mutate(mediana_consumo = median(c_across(ckw1:ckw6)),
+        mediana_factura = median(c_across(tf1:tf6)), 
+        costo_kwh = mediana_factura / mediana_consumo,
+        .keep = "unused") |> 
+ select(siteid, costo_kwh)
+
+sitios %<>% left_join(costos_kwh, by = "siteid")
+
+
+# agrupar por sitio y contar fallas
+por_sitio <- eventos |>
+ group_by(sitio) |>
+ summarise(fallas = n()) |> 
+ arrange(desc(fallas))
+
 @
 
 % aquí va la portada
 
-\renewcommand{\contentsname}{Índice}
-\tableofcontents
+% \renewcommand{\contentsname}{Índice}
+% \tableofcontents
+
 % 
 \addtocontents{toc}{\protect\thispagestyle{empty}} % quitar número de página
 \pagenumbering{arabic}
@@ -579,45 +618,32 @@ scoring_gof <- function(tabla_gof) {
 
 % aquí van las secciones
  
-% # <<child='secciones/10_marco_teorico.Rnw'>>=
+% # <<child='secciones/10_introduccion.Rnw'>>=
 % # 
 % # @
 
- 
-
-% # <<motor, child='secciones/20_motor.Rnw'>>=
-% # 
-% # @
-
-% # <<mandrell, child='secciones/30_mandrell.Rnw'>>=
+% # <<child='secciones/20_metodos.Rnw'>>=
 % # 
 % # @
 
 
-<<producto, child='secciones/40_producto.Rnw'>>=
+<<child='secciones/30_resultados.Rnw'>>=
+
+@
+
+<<child='secciones/60_apendice.Rnw'>>=
 
 @
 
 
-<<bib, child='secciones/50_bibliografia.Rnw'>>=
+
+<<child='secciones/50_bibliografia.Rnw'>>=
 
 @
-
-<<apendice, child='secciones/60_apendice.Rnw'>>=
-
-@
-
-<<figuras, child='secciones/70_figuras.Rnw'>>=
-
-@
-
-<<tablas, child='secciones/80_tablas.Rnw'>>=
-
-@
-
 
 
 \end{document}
+
 
 
 

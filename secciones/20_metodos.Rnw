@@ -1,0 +1,88 @@
+\chapter{Material y métodos}
+
+El proyecto piloto del sistema IoT inició en 2018 con una muestra aleatoria de 30 sitios de
+transimisión. Este sistema recolecta, a través de sensores, varios datos del sitio,
+incluyendo temperatura, humedad relativa, corriente, estado de la puerta, entre otros.
+
+\section{Set de Datos}
+
+\subsection{Sitios}
+
+<<>>=
+sitios |> 
+ tabla(cap = "Sitios seleccionados para proyecto RETINA")
+ # mutate(across(where(is.numeric), round, 2)) |>
+ # rowid_to_column(var = "item") |> 
+ # kbl(booktabs = TRUE, linesep = "", caption = "Sitios seleccionados para proyecto RETINA") %>% 
+ # kable_paper(full_width = F) %>% 
+ # kable_styling(latex_options = "HOLD_position",
+ #               table.envir = "float", font_size = 6)
+@
+
+\ti{Diccionario}
+
+\begin{itemize}[itemsep=1ex]
+  \item \va{siteid:} Identificador único del sitio
+  \item \va{sitio:} Nombre del sitio
+\end{itemize}
+
+Cada uno de estos sitios cuenta con el sistema IoT que mide en tiempo real la corriente del
+sitio. Los sitios del proyecto piloto fueron seleccionado de forma aleatoria a partir de un
+\emph{pool} de 150 sitios de transmisión.  Estos sitios son los más importantes de la red
+de Tigo. Los sitios marcados como HUB indican que hay equipos de TigoStar. Estos sitios
+tienen una carga térmica de casi el doble de los sitios normales.  Tanto la carga de los
+sitios como las capacidades de las unidades de enfriamiento son variadas debido a que la
+cantidad de equipos es diferente.
+
+\subsection{Eventos}
+
+A continuación una muestra del dataset de eventos:
+
+<<>>=
+eventos |>
+ slice_sample(n = 28) |> 
+ tabla(cap = "Data Set Eventos")
+ # kbl(booktabs = TRUE, linesep = "", caption = "Data Set Eventos") %>% 
+ # kable_paper(full_width = F) %>% 
+ # kable_styling(latex_options = "HOLD_position",
+ #               table.envir = "float", font_size = 6)
+@
+
+ \begin{itemize}[itemsep=1ex]
+  \item \va{sitio:} Nombre del sitio.
+  \item \va{operacion:} El consumo en amperios durante un periodo de tiempo igual al
+  periodo en que se registró la falla.
+  \item \va{falla:} Consumo en amperio bajo condición de "falla" en la que las dos
+  unidades de enfriamiento están trabajando en conjunto, tratando de lograr la temperatura
+  establecida en termostato.
+  \item \va{duracion\_hrs:} El tiempo en horas que duraron las unidades de enfriamiento
+  en conjunto sin apagarse. 
+ \end{itemize}
+
+\section{Métodos}
+
+Para el análisis del consumo de energía se seleccionó un periodo de cuatro meses de datos,
+iniciando el primero de enero de 2019 y finalizando el 31 de abril del mismo año.  Durante
+esa ventana se registraron todos los casos ocurridos en los 30 sitios.
+
+En el dataset de eventos se registraron las fallas que se presentaron durante el periodo de
+evaluación.  Un evento se define como el periodo en el que el consumo de corriente se
+incrementó debido a que ambas unidades de enfriamiento (principal y respaldo) comenzaron a
+trabajar de forma conjunta. Se midió el consumo promedio de corriente durante el tiempo de
+trabajo conjunto y se registró en la columna "falla".  Posteriormente, se registró en la
+columna "normal" el consumo durante un periodo de tiempo igual al del momento de falla. El
+objetivo es registrar las diferencias entre el consumo en modo de operación normal y el
+consumo cuando ambas unidades trabajan simultáneamente.
+
+La columna tiempo es la medición del periodo bajo la condición de falla y está dado en horas.
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,247 @@
+\chapter{Resultados}
+
+\section{Modelo Teórico}
+
+\begin{equation}
+   \bm{C = \frac{LQPT}{s}}
+   \label{costo1}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+ 
+  \item \textbf{C:} Costo total de energía eléctrica en USD por año por todos los sitios de
+  Tx.
+  \item L: Costo por evento en quetzales.
+  \item Q: Población de sitios Tx.
+  \item P: Probabilidad de que se den 150 fallas en 1 año.
+  \item T: Cantidad de cuatrimestres que tiene un año
+  \item s: Tipo de cambio para convertir a dólares el resultado
+
+ \end{itemize}
+
+\begin{equation}
+   \bm{L = m\Phi}
+   \label{costo2}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item m: Costo del kilowatt por hora
+  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
+
+ \end{itemize}
+
+\begin{equation}
+   \bm{\Phi = \Delta Vt}
+   \label{costo3}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo
+  de fallo.
+  \item V: Voltaje nominal constante.
+  \item t: Duración del evento en horas.
+
+ \end{itemize}
+ 
+ 
+\section{Análisis Exploratorio}
+
+<<>>=
+est_eventos <- eventos |> 
+ select(where(is.numeric)) |> 
+ resumir()
+
+est_sitios <- sitios |> 
+ select(where(is.numeric)) |> 
+ resumir()
+@
+
+<<>>=
+est_totales <- est_eventos |>
+ bind_rows(est_sitios)
+@
+
+<<>>=
+est_totales |> tabla("Resumen Estadístico tabla de Eventos")
+@
+
+<<>>=
+eventos_n <- eventos %>% select(where(is.numeric))
+sitios_n <- sitios %>% select(where(is.numeric))
+pal    <- palette_OkabeIto[1:ncol(eventos_n)]
+ndv    <- names(eventos_n)
+@
+
+\begin{figure}[H]
+<<fig.width=7, fig.asp=1>>=
+c(p1, p2, p3) %<-% map2(.x = ndv, .y = pal, ~ estimar_densidad(df = eventos, d = .x, color = .y))
+p4 <- estimar_densidad(df = sitios, d = "costo_kwh", color = palette_OkabeIto[7])
+p1 + p2 + p3 + p4 + 
+ plot_annotation(title    = "Análisis de Distribución", 
+                 subtitle = "Estimación de densidad no paramétrica")
+@
+\caption{Distribuciones}
+   \label{fig:dis1}
+\end{figure}
+
+
+\section{Análisis Confirmatorio}
+
+\subsection{Bondad de Ajuste}
+
+Con base a \citep[pag. ~2]{delignette-muller_fitdistrplus_2015}
+
+\begin{quote}
+"Antes de ajustar una o más distribuciones a un conjunto de datos, generalmente es necesario
+elegir buenos candidatos entre un conjunto predefinido de distribuciones. Esta elección puede
+estar guiada por el conocimiento de los procesos estocásticos que rigen la variable modelada,
+o, en ausencia de conocimiento sobre el proceso subyacente, por la observación de su
+distribución empírica.[...]"
+\end{quote}
+
+<<>>=
+tipodis <- c("norm", "lnorm", "gamma")
+@
+
+En el apéndice \ref{appendix:bondad} podemos ver los resultados de todas las pruebas
+realizadas a cada una de las variables de dataset.  El código de la implementación de estas
+pruebas se encuentra en el apéndice \ref{appendix:allcode} para su referencia. 
+
+<<bondad>>=
+eve_gof <- validar_gof(df = eventos_n, tipodis = tipodis)
+sit_gof <- validar_gof(df = sitios_n, tipodis = tipodis)
+total_gof <- bind_rows(eve_gof, sit_gof)
+puntuacion_gof <- total_gof |> scoring_gof()
+@
+
+<<bondad>>=
+puntuacion_gof |> tabla("Distribución más probable con base a scoring")
+@
+
+\section{Simulación}
+
+<<>>=
+set.seed(2021)
+nreps <- 5e3
+@
+
+
+<<>>=
+reparametrizar_rlnorm <- function(x) {
+ m <- mean(x)
+ s <- sd(x)
+ location <- log(m^2 / sqrt(s^2 + m^2))
+ shape <- sqrt(log(1 + (s^2 / m^2)))
+ list(meanlog = location, sdlog = shape)
+}
+@
+
+<<>>=
+media_costo <- mean(sitios$costo_kwh)
+sd_costo <- sd(sitios$costo_kwh)
+nom_vars <- c(names(eventos_n), names(sitios_n))
+@
+
+<<>>=
+dis_costo <- rnorm(n  = nreps, mean = media_costo, sd = sd_costo)
+@
+
+<<>>=
+dist <- eventos_n |> 
+ map_dfr(~ reparametrizar_rlnorm(.x)) |> 
+ pmap(rlnorm, n = nreps) |> 
+ append(list(dis_costo)) |> 
+ set_names(nom_vars)
+@
+
+<<>>=
+mean(dist$operacion)
+@
+
+
+<<>>=
+fl <- exec("rlnorm", n = nreps, !!!reparametrizar_rlnorm(op))
+@
+
+
+
+<<>>=
+dis_operacion <- rlnorm(n = nreps, meanlog = location, sdlog = shape)
+@
+
+
+
+<<>>=
+m <- med[["operacion"]]
+s <- des[["operacion"]]
+location <- log(m^2 / sqrt(s^2 + m^2))
+shape <- sqrt(log(1 + (s^2 / m^2)))
+@
+
+<<>>=
+a <- med[["falla"]]
+b <- des[["falla"]]
+loc <- log(a^2 / sqrt(b^2 + a^2))
+sha <- sqrt(log(1 + (b^2 / a^2)))
+@
+
+<<>>=
+d <- med[["duracion_hrs"]]
+e <- des[["duracion_hrs"]]
+col <- log(d^2 / sqrt(e^2 + d^2))
+ash <- sqrt(log(1 + (e^2 / d^2)))
+@
+
+
+
+
+<<>>=
+dis_fallas <- rlnorm(n = nreps, meanlog = loc, sdlog = sha)
+@
+
+<<>>=
+dis_duracion <- rlnorm(n = nreps, meanlog = col, sdlog = ash)
+@
+
+<<>>=
+distribuciones <- tibble(dis_costo, dis_operacion, dis_fallas, dis_duracion)
+nomb_dis <- names(distribuciones)
+
+ map2(.x = nomb_dis, .y = palette_OkabeIto[1:ncol(distribuciones)], ~ estimar_densidad(df = distribuciones, d = .x, color = .y))
+@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

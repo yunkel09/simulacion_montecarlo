@@ -6,7 +6,7 @@
 \label{appendix:bondad}
 
 <<gof>>=
-validar_gof(df = datos, tipodis = tipodis) |> tabla("GOF")
+total_gof |> tabla("GOF")
 @
 
 \section{Glosario}
@@ -50,11 +50,12 @@ validar_gof(df = datos, tipodis = tipodis) |> tabla("GOF")
           
  \end{table}
 
-\section{Código}
-\label{appendix:allcode}
-<<eval=FALSE, ref.label=all_labels(), echo=TRUE>>=
+% \section{Código}
+% \label{appendix:allcode}
+% <<eval=FALSE, ref.label=all_labels(), echo=TRUE>>=
+% 
+% @
 
-@
 
 \end{appendices}
 

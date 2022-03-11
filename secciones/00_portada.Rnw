@@ -5,10 +5,18 @@
 	% \includegraphics[width=0.6\textwidth]{logo_tigo}\par\vspace{1.5cm}
 	{\scshape\huge \maestria \par}
 	\vspace{2cm}
-	{\huge\bfseries \titulo\par}
+	
+	
+	
+	% {\huge\bfseries \titulo\par}
+\begin{center}
+{\huge\bfseries Aplicación de simulación Monte-Carlo para modelar el costo de energía
+eléctrica en sitios de transmisión bajo condiciones de falla}
+\end{center}	
+	
 	\vspace{1.5cm}
 	
-	{\large \autor\par}
+	{\LARGE \autor\par}
 	\vspace{0.2cm}
 	
 	{\normalsize \fecha\par}
@@ -20,13 +28,9 @@
 A través de una prueba de bondad de ajuste determinamos que la variable respuesta \va{income}
 no sigue una distribución normal. El hecho de que la variable respuesta no esté normalmente
 distribuida no limita el uso de un modelo de regresión lineal para representar la relación
-entre las variables \va{income} y \va{age}. \citep{li_are_2012}\footnote{\url{https://bit.ly/35oJ8OS}}.
-Aunque el alcance de este trabajo no incluye encontrar una solución al problema de la
-heterocedasticidad ea nivel de modelado, podemos plantear dos posibles soluciones:
-transformar la variable respuesta utilizando $E(log(Y))$ o aplicar GLM para
-modelar la respuesta como $log(E(Y))$ con log-link
-(ej. \ti{glm(family = gaussian(link = "log"))}).  Desde un punto de vista práctico, esto
-último, es decir, el logaritmo de la media (valor esperado o esperanza E) suele ser más útil.
+entre las variables \va{income} y \va{age}. Aunque el alcance de este trabajo no incluye
+encontrar una solución al problema de la heterocedasticidad ea nivel de modelado, podemos
+plantear dos posibles soluciones: transformar la variable respuesta utilizando.
 
 \vspace{0.5cm}
 

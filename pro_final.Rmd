@@ -43,7 +43,7 @@ options(pillar.sigfig    = 5,
 ```{r}
 archivos <- dir_ls(path = ".", glob = "*.csv")
 arg <- list(lazy = F, name_repair = make_clean_names)
-c(eventos, sitios) %<-% map(archivos, ~ exec("read_csv", file = .x, !!!lista) |> 
+c(eventos, sitios) %<-% map(archivos, ~ exec("read_csv", file = .x, !!!arg) |> 
                               mutate(across(where(is.character), toupper)))
 ```
 
@@ -137,8 +137,39 @@ Al multiplicar por tres estamos anualizando
 ```
 
 
+ - Nuestro trabajo es hacerlo difícil
+ - 68 fallas en 4 meses
+ - usar fallas y no sitios para calcular la probabilidad de falla
+ - no usar el valor esperado, sino la probabilidad de tener 150 fallas dado 
+ 
+```{r}
+m <- 68 * 3  # 68 fallas en cuatro meses x 3 cuatrimestres
+```
+ 
+¿Cuál es la probabilidad de que hay al menos 150 fallas en un periodo de un año? 
 
-
+```{r}
+ppois(q = 150, 204, lower.tail = F)
+```
+ 
+ newbold: 174 (198)
+ 
+```{r}
+m <- 68 * 3
+```
+ 
+```{r}
+ppois(q = 100, lambda = m)
+```
+ 
+```{r}
+sum(dpois(x = 1:2, lambda = 4.2))
+```
+ 
+```{r}
+ppois(2, 4.2)
+```
+ 
 
 
 
