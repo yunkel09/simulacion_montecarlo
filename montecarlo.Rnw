@@ -257,6 +257,9 @@ BoldItalicFont = Souvenir-BoldItalic.otf]
 
 
 \setlength{\abovetopsep}{-0.9ex}
+
+% \usepackage{tabu}
+
 % \renewcommand{\arraystretch}{1.5}
 % ==============================================================================
 
@@ -401,7 +404,7 @@ cargar_fuentes()
 yunkel <- theme_cowplot(font_family = "yano") +
  theme(plot.margin   = unit(c(6, 1, 1, 1), "mm"),
        axis.title    = element_text(size = 10),
-       axis.text     = element_text(size = 10),
+       axis.text     = element_text(size = 8),
        plot.title    = element_text(size = 18),
        plot.subtitle = element_text(size = 12))
 
@@ -466,6 +469,10 @@ estimar_densidad <- function(df, d, color) {
              alpha = 0.5) +
   labs(title = str_to_title(d))
 }
+
+# crear distribucion normal
+rnorm2 <- function(n, mean, sd) { mean + sd * scale(rnorm(n)) }
+
 
 # lista de funciones con pruebas no paramétricas para evaluar normalidad
 funciones <- list(
@@ -603,6 +610,15 @@ por_sitio <- eventos |>
  group_by(sitio) |>
  summarise(fallas = n()) |> 
  arrange(desc(fallas))
+
+# frecuencia eventos
+frecuencia_eventos <- sitios |> 
+ select(-costo_kwh) |> 
+ left_join(por_sitio, by = "sitio") |> 
+ mutate(across(where(is.numeric), replace_na, 0),
+        prob_falla = fallas / sum(fallas)) |> 
+ arrange(desc(fallas))
+
 
 @
 

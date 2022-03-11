@@ -2,6 +2,8 @@
 
 \section{Modelo Teórico}
 
+\ti{Costo total en USD por año debido a fallas}
+
 \begin{equation}
    \bm{C = \frac{LQPT}{s}}
    \label{costo1}
@@ -21,6 +23,9 @@ Donde:
 
  \end{itemize}
 
+
+\ti{Costo por evento}
+
 \begin{equation}
    \bm{L = m\Phi}
    \label{costo2}
@@ -29,6 +34,7 @@ Donde:
 Donde:
 
  \begin{itemize}[itemsep=1ex]
+  \item L: Costo por evento en quetzales.
   \item m: Costo del kilowatt por hora
   \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
 
@@ -42,10 +48,25 @@ Donde:
 Donde:
 
  \begin{itemize}[itemsep=1ex]
+  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
   \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo
   de fallo.
   \item V: Voltaje nominal constante.
   \item t: Duración del evento en horas.
+
+ \end{itemize}
+ 
+ \begin{equation}
+   \bm{\Delta = f - o}
+   \label{costo4}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo.
+  \item f: Distribución de la corriente en modo de falla.
+  \item o: Distribución de la corriente en modo de operación normal.
 
  \end{itemize}
  
@@ -90,7 +111,6 @@ p1 + p2 + p3 + p4 +
    \label{fig:dis1}
 \end{figure}
 
-
 \section{Análisis Confirmatorio}
 
 \subsection{Bondad de Ajuste}
@@ -111,9 +131,11 @@ tipodis <- c("norm", "lnorm", "gamma")
 
 En el apéndice \ref{appendix:bondad} podemos ver los resultados de todas las pruebas
 realizadas a cada una de las variables de dataset.  El código de la implementación de estas
-pruebas se encuentra en el apéndice \ref{appendix:allcode} para su referencia. 
+pruebas se encuentra en el apéndice
+% \ref{appendix:allcode}
+para su referencia. 
 
-<<bondad>>=
+<<>>=
 eve_gof <- validar_gof(df = eventos_n, tipodis = tipodis)
 sit_gof <- validar_gof(df = sitios_n, tipodis = tipodis)
 total_gof <- bind_rows(eve_gof, sit_gof)
@@ -124,13 +146,36 @@ puntuacion_gof <- total_gof |> scoring_gof()
 puntuacion_gof |> tabla("Distribución más probable con base a scoring")
 @
 
+Aunque en la gráfica \ref{fig:dis1} y en la tabla \ref{tab:bondad} la distribución del
+tiempo aparenta seguir una distribución log-normal, en la práctica sabemos que esto no es
+así. El tiempo se distribuye de una forma diferente.  Para efectos prácticos, diremos que
+la duración de la falla tiene una distribución equiprobable que puede ir desde 1 hora hasta
+36 horas.
+
+
+\section{Análisis de las fallas}
+
+<<>>=
+por_sitio |> tabla("Cantidad de fallas por cada sitio en periodo de evaluación (4 meses")
+@
+
+<<>>=
+frecuencia_eventos |> tabla("Distribución de probabilidades por sitio")
+@
+
+
 \section{Simulación}
+
+Crearemos las distribuciones de entrada con base a los resultados obtenidos en el análisis
+exploratorio y en las pruebas de bondad de ajuste de la tabla \ref{tab:bondad}. 
+
+Validemos que las distribuciones creadas con los números aleatorios se corresponden
+visualmente con lo esperado.
 
 <<>>=
 set.seed(2021)
-nreps <- 5e3
+nreps <- 1e5
 @
-
 
 <<>>=
 reparametrizar_rlnorm <- function(x) {
@@ -150,93 +195,92 @@ nom_vars <- c(names(eventos_n), names(sitios_n))
 
 <<>>=
 dis_costo <- rnorm(n  = nreps, mean = media_costo, sd = sd_costo)
+dis_duracion <- runif(n = nreps, min = 1, max = 36)
 @
 
 <<>>=
 dist <- eventos_n |> 
- map_dfr(~ reparametrizar_rlnorm(.x)) |> 
+ select(-duracion) |> 
+ map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |> 
+ mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |> 
+ select(-var) |> 
  pmap(rlnorm, n = nreps) |> 
- append(list(dis_costo)) |> 
- set_names(nom_vars)
+ append(list(dis_duracion, dis_costo)) |>  
+ set_names(nom_vars) |> 
+ bind_rows(.id = "var")
 @
 
 <<>>=
-mean(dist$operacion)
+dist |> 
+ slice(1:10) |> 
+ tabla("Distribución de valores creadas con números aleatorios")
 @
 
+Validemos visualmente que nuestras distribuciones están correctas
 
-<<>>=
-fl <- exec("rlnorm", n = nreps, !!!reparametrizar_rlnorm(op))
-@
-
-
-
-<<>>=
-dis_operacion <- rlnorm(n = nreps, meanlog = location, sdlog = shape)
-@
-
-
-
-<<>>=
-m <- med[["operacion"]]
-s <- des[["operacion"]]
-location <- log(m^2 / sqrt(s^2 + m^2))
-shape <- sqrt(log(1 + (s^2 / m^2)))
+<<fig.width=7, fig.asp=1>>=
+map2(.x = names(dist), 
+     .y = c(pal, palette_OkabeIto[7]), ~ estimar_densidad(df = dist, d = .x, color = .y)) |> 
+ reduce(.f = `+`) + 
+ plot_layout(ncol = 2) +
+ plot_annotation(title    = "Distribución", 
+                 subtitle = "Estimación de densidad no paramétrica") 
 @
 
 <<>>=
-a <- med[["falla"]]
-b <- des[["falla"]]
-loc <- log(a^2 / sqrt(b^2 + a^2))
-sha <- sqrt(log(1 + (b^2 / a^2)))
-@
-
-<<>>=
-d <- med[["duracion_hrs"]]
-e <- des[["duracion_hrs"]]
-col <- log(d^2 / sqrt(e^2 + d^2))
-ash <- sqrt(log(1 + (e^2 / d^2)))
+eventos_n |> summary()
+dist |> summary()
 @
 
 
 
 
 <<>>=
-dis_fallas <- rlnorm(n = nreps, meanlog = loc, sdlog = sha)
+poblacion_sitios_tx <- 150
+fallas_cuatrimestre <- sum(frecuencia_eventos$fallas)
+cuatrimestres <- 3
+lambda <- fallas_cuatrimestre * 3
+prob_falla <- ppois(q = poblacion_sitios_tx, lambda, lower.tail = F)
+tipo_cambio <- 7.78
 @
 
 <<>>=
-dis_duracion <- rlnorm(n = nreps, meanlog = col, sdlog = ash)
+simulacion <- dist |> 
+ mutate(
+  voltaje = 120,
+  amp_adi = falla - operacion,
+  kwh_adi = ((amp_adi * voltaje * duracion) / 1e3),
+  costeve = costo_kwh * kwh_adi,
+  costo_t = ((costeve * poblacion_sitios_tx * prob_falla * cuatrimestres) / tipo_cambio)
+)
 @
 
 <<>>=
-distribuciones <- tibble(dis_costo, dis_operacion, dis_fallas, dis_duracion)
-nomb_dis <- names(distribuciones)
+simulacion |>
+ mutate(across(where(is.numeric), round, 2)) |> 
+ slice_sample(n = 15) |> 
+ tabla("Resultados Simulación")
+@
 
- map2(.x = nomb_dis, .y = palette_OkabeIto[1:ncol(distribuciones)], ~ estimar_densidad(df = distribuciones, d = .x, color = .y))
+<<>>=
+dol <- dollar_format(accuracy = 0.1)
+brk <- hist(simulacion$costo_t, plot = F)$breaks
+med <- mean(simulacion$costo_t)
+des <- sd(simulacion$costo_t)
 @
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<<>>=
+simulacion |> 
+ ggplot(aes(x = costo_t, y = ..density..)) +
+ geom_histogram(fill = "#56B4E9", size = .2, breaks = brk, color = "black") +
+ geom_density(size = 1) +
+ geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+ scale_x_continuous(name = "Utilidades en millones de dólares [MM]", labels = dol,
+                    breaks = brk) +
+ labs(title = "Distribución de las utilidades") + furia
+@
 
 
 
