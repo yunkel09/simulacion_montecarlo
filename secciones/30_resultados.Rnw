@@ -152,6 +152,8 @@ así. El tiempo se distribuye de una forma diferente.  Para efectos prácticos, 
 la duración de la falla tiene una distribución equiprobable que puede ir desde 1 hora hasta
 36 horas.
 
+De igual forma, sabemos que la distribución de la corriente es gaussiana, por lo que
+cambiaremos esto.
 
 \section{Análisis de las fallas}
 
@@ -189,25 +191,40 @@ reparametrizar_rlnorm <- function(x) {
 
 <<>>=
 media_costo <- mean(sitios$costo_kwh)
-sd_costo <- sd(sitios$costo_kwh)
+desvi_costo <- sd(sitios$costo_kwh)
+media_opera <- mean(eventos$operacion)
+desvi_opera <- sd(eventos$operacion)
+desvi_falla <- sd(eventos$falla)
+media_falla <- mean(eventos$falla)
+@
+
+
+<<>>=
 nom_vars <- c(names(eventos_n), names(sitios_n))
 @
 
 <<>>=
-dis_costo <- rnorm(n  = nreps, mean = media_costo, sd = sd_costo)
-dis_duracion <- runif(n = nreps, min = 1, max = 36)
+costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo) |> as.numeric()
+operacion <- rnorm2(n = nreps, mean = media_opera, sd = desvi_opera) |> as.numeric()
+falla     <- rnorm2(n = nreps, mean = media_falla, sd = desvi_falla) |> as.numeric()
+duracion  <- runif(n  = nreps, min = 1, max = 36)
 @
 
 <<>>=
-dist <- eventos_n |> 
- select(-duracion) |> 
- map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |> 
- mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |> 
- select(-var) |> 
- pmap(rlnorm, n = nreps) |> 
- append(list(dis_duracion, dis_costo)) |>  
- set_names(nom_vars) |> 
- bind_rows(.id = "var")
+dist <- tibble(operacion, falla, duracion, costo_kwh)
+@
+
+
+<<>>=
+# dist <- eventos_n |> 
+#  select(-duracion) |> 
+#  map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |> 
+#  mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |> 
+#  select(-var) |> 
+#  pmap(rlnorm, n = nreps) |> 
+#  append(list(dis_duracion, dis_costo)) |>  
+#  set_names(nom_vars) |> 
+#  bind_rows(.id = "var")
 @
 
 <<>>=
@@ -228,12 +245,10 @@ map2(.x = names(dist),
 @
 
 <<>>=
-eventos_n |> summary()
-dist |> summary()
+valor_esperado_fallas <- frecuencia_eventos |>
+  summarise(esperanza_fallas  = round(sum(fallas * prob_falla))) |> 
+  pull(esperanza_fallas)
 @
-
-
-
 
 <<>>=
 poblacion_sitios_tx <- 150
@@ -251,7 +266,8 @@ simulacion <- dist |>
   amp_adi = falla - operacion,
   kwh_adi = ((amp_adi * voltaje * duracion) / 1e3),
   costeve = costo_kwh * kwh_adi,
-  costo_t = ((costeve * poblacion_sitios_tx * prob_falla * cuatrimestres) / tipo_cambio)
+  costopr = valor_esperado_fallas * costeve,
+  costo_t = ((costopr * poblacion_sitios_tx * cuatrimestres) / tipo_cambio)
 )
 @
 
@@ -263,27 +279,35 @@ simulacion |>
 @
 
 <<>>=
+cost <- simulacion$costo_t/1e3
 dol <- dollar_format(accuracy = 0.1)
-brk <- hist(simulacion$costo_t, plot = F)$breaks
-med <- mean(simulacion$costo_t)
-des <- sd(simulacion$costo_t)
+brk <- hist(cost, plot = F)$breaks
+med <- mean(cost)
+des <- sd(cost)
 @
-
-
 
 <<>>=
 simulacion |> 
+ mutate(costo_t = costo_t/1e3) |> 
  ggplot(aes(x = costo_t, y = ..density..)) +
  geom_histogram(fill = "#56B4E9", size = .2, breaks = brk, color = "black") +
  geom_density(size = 1) +
- geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
- scale_x_continuous(name = "Utilidades en millones de dólares [MM]", labels = dol,
-                    breaks = brk) +
+ geom_vline(xintercept = med, color = "black", linetype = "dashed") +
+ scale_x_continuous(name = "Utilidades en miles de dólares [K]", 
+                    labels = dol,
+                    breaks = seq(-400, 400, 100),
+                    limits = c(-400, 400)) +
  labs(title = "Distribución de las utilidades") + furia
 @
 
 
+<<>>=
+mean(simulacion$costo_t)
+@
 
+<<>>=
+
+@
 
 
 
