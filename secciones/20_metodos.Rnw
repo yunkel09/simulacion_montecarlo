@@ -1,7 +1,7 @@
 \chapter{Material y métodos}
 
 El proyecto piloto del sistema IoT inició en 2018 con una muestra aleatoria de 30 sitios de
-transimisión. Este sistema recolecta, a través de sensores, varios datos del sitio,
+transmisión. Este sistema recolecta, a través de sensores, varios datos del sitio,
 incluyendo temperatura, humedad relativa, corriente, estado de la puerta, entre otros.
 
 \section{Set de Datos}
@@ -11,12 +11,6 @@ incluyendo temperatura, humedad relativa, corriente, estado de la puerta, entre 
 <<>>=
 sitios |> 
  tabla(cap = "Sitios seleccionados para proyecto RETINA")
- # mutate(across(where(is.numeric), round, 2)) |>
- # rowid_to_column(var = "item") |> 
- # kbl(booktabs = TRUE, linesep = "", caption = "Sitios seleccionados para proyecto RETINA") %>% 
- # kable_paper(full_width = F) %>% 
- # kable_styling(latex_options = "HOLD_position",
- #               table.envir = "float", font_size = 6)
 @
 
 \ti{Diccionario}
@@ -24,6 +18,7 @@ sitios |>
 \begin{itemize}[itemsep=1ex]
   \item \va{siteid:} Identificador único del sitio
   \item \va{sitio:} Nombre del sitio
+  \item \va{costo\_kwh:} Costo promedio del kwh en ese sitio.
 \end{itemize}
 
 Cada uno de estos sitios cuenta con el sistema IoT que mide en tiempo real la corriente del
@@ -42,10 +37,6 @@ A continuación una muestra del dataset de eventos:
 eventos |>
  slice_sample(n = 28) |> 
  tabla(cap = "Data Set Eventos")
- # kbl(booktabs = TRUE, linesep = "", caption = "Data Set Eventos") %>% 
- # kable_paper(full_width = F) %>% 
- # kable_styling(latex_options = "HOLD_position",
- #               table.envir = "float", font_size = 6)
 @
 
  \begin{itemize}[itemsep=1ex]
@@ -76,6 +67,82 @@ consumo cuando ambas unidades trabajan simultáneamente.
 
 La columna tiempo es la medición del periodo bajo la condición de falla y está dado en horas.
 
+\section{Modelo Matemático}
+\label{sec:modeloteorico}
+
+Utilizaremos un método \emph{top-down} para definr las ecuaciones.
+
+\ti{Costo total en USD por año debido a fallas}
+
+\begin{equation}
+   \bm{C = \frac{LQPT}{s}}
+   \label{costo1}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+ 
+  \item \textbf{C:} Costo total de energía eléctrica en USD por año por todos los sitios de
+  Tx.
+  \item L: Costo por evento en quetzales.
+  \item Q: Población de sitios Tx.
+  \item P: Probabilidad de que se den una determinada cantidad de fallas en 1 año.
+  \item T: Cantidad de cuatrimestres que tiene un año
+  \item s: Tipo de cambio para convertir a dólares el resultado
+
+ \end{itemize}
+
+\ti{Costo por evento}
+
+\begin{equation}
+   \bm{L = m\Phi}
+   \label{costo2}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item L: Costo por evento en quetzales.
+  \item m: Costo del kilowatt por hora
+  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
+
+ \end{itemize}
+
+\ti{Kilowatts por hora adicionales en modo falla}
+
+\begin{equation}
+   \bm{\Phi = \Delta Vt}
+   \label{costo3}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
+  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo
+  de fallo.
+  \item V: Voltaje nominal constante.
+  \item t: Duración del evento en horas.
+
+ \end{itemize}
+ 
+\ti{Diferencia entre el modo de operación normal y el modo de fallo}
+
+ \begin{equation}
+   \bm{\Delta = f - o}
+   \label{costo4}
+\end{equation}
+
+Donde:
+
+ \begin{itemize}[itemsep=1ex]
+  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo.
+  \item f: Distribución de la corriente en modo de falla.
+  \item o: Distribución de la corriente en modo de operación normal.
+
+ \end{itemize}
+ 
 
 
 

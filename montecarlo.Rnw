@@ -388,6 +388,9 @@ knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackag
 import::from(magrittr, "%T>%", "%$%", "%<>%", .into = "operadores")
 import::from(zeallot, `%<-%`)
 import::from(fs, dir_ls)
+import::from(nortest, ad.test, pearson.test, sf.test, lillie.test)
+import::from(DescTools, JarqueBeraTest)
+import::from(broom, tidy)
 import::from(kableExtra, .except = "group_rows")
 import::from(cowplot, .except = "stamp")
 import::from(colorblindr, scale_fill_OkabeIto, palette_OkabeIto)
@@ -405,7 +408,7 @@ cargar_fuentes()
 yunkel <- theme_cowplot(font_family = "yano") +
  theme(plot.margin   = unit(c(6, 1, 1, 1), "mm"),
        axis.title    = element_text(size = 10),
-       axis.text     = element_text(size = 6),
+       axis.text     = element_text(size = 8),
        plot.title    = element_text(size = 18),
        plot.subtitle = element_text(size = 12))
 
@@ -424,9 +427,12 @@ furia <- yunkel +
 
 # scales facilita el formato en los gráficos
 porcentaje <- label_percent(decimal.mark = ".", suffix = "%", accuracy = 0.001)
+dol <- dollar_format(accuracy = 0.1)
 
 # establecer tema por defecto
 theme_set(yunkel)
+
+
 
 # crear tablas latex
 tabla <- function(df, cap = "prueba") {
@@ -441,14 +447,28 @@ tabla <- function(df, cap = "prueba") {
 resumir <- function(.df) {
  my_skim <- skim_with(
   base = NULL,
-  numeric = sfl(media   = ~ mean(., na.rm = TRUE),
-                mediana = ~ median(., na.rm = TRUE),
-                desviacion  = ~ sd(., na.rm = TRUE),
-                maximo  = ~ max(., na.rm = TRUE),
-                minimo  = ~ min(., na.rm = TRUE)), append = F)
+  numeric = sfl(mean = ~ mean(., na.rm = TRUE),
+                sd   = ~ sd(., na.rm = TRUE),
+                min  = ~ min(., na.rm = TRUE),
+                max  = ~ max(., na.rm = TRUE)), append = F)
  my_skim(.df) |> 
  rename_with(~ str_replace_all(.x, "numeric\\.", "")) |> 
- rename(tipo = skim_type, variable = skim_variable)
+ select(-skim_type) |> 
+ rename(variable = skim_variable)
+}
+
+# estadísticos para lognormal truncado
+parametros_lognormal <- function(.df) {
+ my_skim <- skim_with(
+  base = NULL,
+  numeric = sfl(meanlog   = ~ mean(., na.rm = TRUE),
+                sdlog  = ~ sd(., na.rm = TRUE),
+                min  = ~ min(., na.rm = TRUE),
+                max  = ~ max(., na.rm = TRUE)), append = F)
+ my_skim(.df) |> 
+ rename_with(~ str_replace_all(.x, "numeric\\.", "")) |> 
+ select(-skim_type) |> 
+ rename(var = skim_variable)
 }
 
 # crear histogramas con función de densidad
@@ -471,20 +491,16 @@ estimar_densidad <- function(df, d, color) {
   labs(title = str_to_title(d))
 }
 
-# crear distribucion normal
+# crear distribución normal
 rnorm2 <- function(n, mean, sd) { 
   mean + sd * scale(rnorm(n)) |> 
   as.numeric()
 }
 
-rlnorm2 <- function(n, mean, sd, min, max) {
- mean + sd * scale(rlnormTrunc(n = n, meanlog = mean, sdlog = sd, min = min, max = max)) |> 
-  as.numeric()
-}
 
 # lista de funciones con pruebas no paramétricas para evaluar normalidad
 funciones <- list(
- shapiro_wilk       = function(x) shapiro.test(x),
+ # shapiro_wilk       = function(x) shapiro.test(x),
  jarque_bera        = function(x) JarqueBeraTest(x, robust = F),
  pearson            = function(x) pearson.test(x), 
  shapiro_francia    = function(x) sf.test(x),
@@ -631,7 +647,9 @@ frecuencia_eventos <- sitios |>
 @
 
 % aquí va la portada
-
+<<child='secciones/00_portada.Rnw'>>=
+ 
+@
 % \renewcommand{\contentsname}{Índice}
 % \tableofcontents
 
@@ -642,14 +660,13 @@ frecuencia_eventos <- sitios |>
 
 % aquí van las secciones
  
-% # <<child='secciones/10_introduccion.Rnw'>>=
-% # 
-% # @
+<<child='secciones/10_introduccion.Rnw'>>=
+ 
+@
 
-% # <<child='secciones/20_metodos.Rnw'>>=
-% # 
-% # @
+<<child='secciones/20_metodos.Rnw'>>=
 
+@
 
 <<child='secciones/30_resultados.Rnw'>>=
 
@@ -658,7 +675,6 @@ frecuencia_eventos <- sitios |>
 <<child='secciones/60_apendice.Rnw'>>=
 
 @
-
 
 
 <<child='secciones/50_bibliografia.Rnw'>>=

@@ -1,96 +1,8 @@
 \chapter{Resultados}
 
-\section{Modelo Teórico}
-
-\ti{Costo total en USD por año debido a fallas}
-
-\begin{equation}
-   \bm{C = \frac{LQPT}{s}}
-   \label{costo1}
-\end{equation}
-
-Donde:
-
- \begin{itemize}[itemsep=1ex]
- 
-  \item \textbf{C:} Costo total de energía eléctrica en USD por año por todos los sitios de
-  Tx.
-  \item L: Costo por evento en quetzales.
-  \item Q: Población de sitios Tx.
-  \item P: Probabilidad de que se den 150 fallas en 1 año.
-  \item T: Cantidad de cuatrimestres que tiene un año
-  \item s: Tipo de cambio para convertir a dólares el resultado
-
- \end{itemize}
-
-
-\ti{Costo por evento}
-
-\begin{equation}
-   \bm{L = m\Phi}
-   \label{costo2}
-\end{equation}
-
-Donde:
-
- \begin{itemize}[itemsep=1ex]
-  \item L: Costo por evento en quetzales.
-  \item m: Costo del kilowatt por hora
-  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
-
- \end{itemize}
-
-\begin{equation}
-   \bm{\Phi = \Delta Vt}
-   \label{costo3}
-\end{equation}
-
-Donde:
-
- \begin{itemize}[itemsep=1ex]
-  \item $\Phi$: Cantidad de kilowatts adicionales durante la falla.
-  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo
-  de fallo.
-  \item V: Voltaje nominal constante.
-  \item t: Duración del evento en horas.
-
- \end{itemize}
- 
- \begin{equation}
-   \bm{\Delta = f - o}
-   \label{costo4}
-\end{equation}
-
-Donde:
-
- \begin{itemize}[itemsep=1ex]
-  \item $\Delta$: Diferencia en amperios entre el modo de operación normal y el modo.
-  \item f: Distribución de la corriente en modo de falla.
-  \item o: Distribución de la corriente en modo de operación normal.
-
- \end{itemize}
- 
- 
 \section{Análisis Exploratorio}
 
-<<>>=
-est_eventos <- eventos |> 
- select(where(is.numeric)) |> 
- resumir()
-
-est_sitios <- sitios |> 
- select(where(is.numeric)) |> 
- resumir()
-@
-
-<<>>=
-est_totales <- est_eventos |>
- bind_rows(est_sitios)
-@
-
-<<>>=
-est_totales |> tabla("Resumen Estadístico tabla de Eventos")
-@
+ 
 
 <<>>=
 eventos_n <- eventos %>% select(where(is.numeric))
@@ -110,6 +22,29 @@ p1 + p2 + p3 + p4 +
 \caption{Distribuciones}
    \label{fig:dis1}
 \end{figure}
+
+<<>>=
+est_eventos <- eventos |> 
+ select(where(is.numeric)) |> 
+ resumir()
+
+est_sitios <- sitios |> 
+ select(where(is.numeric)) |> 
+ resumir()
+@
+
+<<>>=
+est_totales <- est_eventos |>
+ bind_rows(est_sitios)
+@
+
+<<resop>>=
+est_totales |> tabla("Resumen Estadístico tabla de Eventos")
+@
+
+En la tabla \ref{tab:resop} vemos que la diferencia entre la cantidad de amperios máximos que
+se puede alcanzar en modo de falla en de 22 en comparación con el modo normal. Se observa
+que en modo de falla la media se incrementa unos 14 amperios. 
 
 \section{Análisis Confirmatorio}
 
@@ -149,22 +84,29 @@ puntuacion_gof |> tabla("Distribución más probable con base a scoring")
 Aunque en la gráfica \ref{fig:dis1} y en la tabla \ref{tab:bondad} la distribución del
 tiempo aparenta seguir una distribución log-normal, en la práctica sabemos que esto no es
 así. El tiempo se distribuye de una forma diferente.  Para efectos prácticos, diremos que
-la duración de la falla tiene una distribución equiprobable que puede ir desde 1 hora hasta
-36 horas.
+la duración de la falla tiene una distribución equiprobable que estará determinada por
+los parámetros de \texttt{min} y \texttt{max} de la muestra.
 
-De igual forma, sabemos que la distribución de la corriente es gaussiana, por lo que
-cambiaremos esto.
+\section{Frecuencia de las fallas}
 
-\section{Análisis de las fallas}
-
-<<>>=
-por_sitio |> tabla("Cantidad de fallas por cada sitio en periodo de evaluación (4 meses")
+<<fallas>>=
+por_sitio |> 
+ rowid_to_column(var = "item") |> 
+ tabla("Cantidad de fallas por cada sitio en periodo de evaluación (4 meses")
 @
 
-<<>>=
+En la tabla \ref{tab:fallas} vemos que en los cuatro meses de evaluación fallaron 17 sitios
+distintos del total de 30, es decir un 56\%.  Algunos de ellos llegaron a tener en este
+periodo hasta 11 fallas. El total de fallas registradas en el periodo de evaluación fue de
+68.
+
+<<frecuencia>>=
 frecuencia_eventos |> tabla("Distribución de probabilidades por sitio")
 @
 
+En la tabla \ref{tab:frecuencia} se ha unido la tabla de sitios con la tabla de eventos para
+poder obtener las frecuencias relativas.  Esto es útil para poder calcular la
+\textbf{esperanza matemática}. 
 
 \section{Simulación}
 
@@ -176,116 +118,89 @@ visualmente con lo esperado.
 
 <<>>=
 set.seed(2021)
-nreps <- 1e5
-@
-
-<<>>=
-reparametrizar_rlnorm <- function(x) {
- m <- mean(x)
- s <- sd(x)
- location <- log(m^2 / sqrt(s^2 + m^2))
- shape <- sqrt(log(1 + (s^2 / m^2)))
- list(meanlog = location, sdlog = shape)
-}
+nreps <- 5e3
 @
 
 <<>>=
 media_costo <- mean(sitios$costo_kwh)
 desvi_costo <- sd(sitios$costo_kwh)
-media_opera <- mean(eventos$operacion)
-desvi_opera <- sd(eventos$operacion)
-desvi_falla <- sd(eventos$falla)
-media_falla <- mean(eventos$falla)
-minimo_operacion <- min(eventos$operacion)
-maximo_operacion <- max(eventos$operacion)
-minimo_falla <- min(eventos$falla)
-maximo_falla <- max(eventos$falla)
+min_duracio <- min(eventos$duracion)
+max_duracio <- max(eventos$duracion)
 @
 
 <<>>=
 costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo)
-operacion <- rlnorm2(n = nreps, mean = media_opera, sd = desvi_opera, 
-                     min = minimo_operacion, max = maximo_falla)
-falla     <- rlnorm2(n = nreps, mean = media_falla, sd = desvi_falla, 
-                     min = minimo_falla, max = maximo_falla)
-duracion  <- runif(n  = nreps, min = min(eventos$duracion), max = max(eventos$duracion))
+duracion  <- runif(n  = nreps, min = min_duracio, max = max_duracio)
 @
 
 <<>>=
-costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo)
-operacion <- rlnormTrunc(n = nreps, meanlog = media_opera, sdlog = desvi_opera, min = minimo_operacion, max = maximo_falla)
-falla     <- rlnormTrunc(n = nreps, meanlog = media_falla, sdlog = desvi_falla, min = minimo_falla, max = maximo_falla)
-duracion  <- runif(n  = nreps, min = min(eventos$duracion), max = max(eventos$duracion))
-@
-
-
-
-<<>>=
-# dist <- eventos_n |>
-#  select(-duracion) |>
-#  map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |>
-#  mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |>
-#  select(-var) |>
-#  pmap(rlnorm, n = nreps) |>
-#  append(list(dis_duracion, dis_costo)) |>
-#  set_names(nom_vars) |>
-#  bind_rows(.id = "var")
-@
-
-
-
-% <<>>=
-% media_costo <- mean(sitios$costo_kwh)
-% desvi_costo <- sd(sitios$costo_kwh)
-% media_opera <- mean(eventos$operacion)
-% desvi_opera <- sd(eventos$operacion)
-% desvi_falla <- sd(eventos$falla)
-% media_falla <- mean(eventos$falla)
-% @
-% 
-% 
-% <<>>=
-% nom_vars <- c(names(eventos_n), names(sitios_n))
-% @
-% 
-% <<>>=
-% costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo) |> as.numeric()
-% operacion <- rnorm2(n = nreps, mean = media_opera, sd = desvi_opera) |> as.numeric()
-% falla     <- rnorm2(n = nreps, mean = media_falla, sd = desvi_falla) |> as.numeric()
-% duracion  <- runif(n  = nreps, min = 1, max = 36)
-% @
- 
-<<>>=
-dist <- tibble(operacion, falla, duracion, costo_kwh)
-@
- 
-<<>>=
-
+distribuciones <-  eventos_n |> 
+ select(-duracion) |> 
+ parametros_lognormal() |> 
+ select(-var) |> 
+ pmap(rlnormTrunc, n = nreps) |> 
+ append(list(costo_kwh, duracion)) |> 
+ set_names(c("operacion", "falla", "costo_kwh", "duracion")) |> 
+ bind_rows(.id = "var")
 @
 
 
 <<>>=
-dist |> 
- slice(1:10) |> 
- tabla("Distribución de valores creadas con números aleatorios")
+distribuciones |> 
+ slice(1:5) |> 
+ tabla("Vectores creados con números aleatorios a partir de la distribución de la muestra")
 @
 
-Validemos visualmente que nuestras distribuciones están correctas
+Validemos visualmente que nuestras distribuciones generadas con números aleatorios sigan
+las mismas distribuciones de la muestra (datos históricos)
 
-<<fig.width=7, fig.asp=1>>=
-map2(.x = names(dist), 
-     .y = c(pal, palette_OkabeIto[7]), ~ estimar_densidad(df = dist, d = .x, color = .y)) |> 
+\begin{figure}[H]
+<<fig.width=7, fig.asp=0.7>>=
+map2(.x = names(distribuciones), 
+     .y = c(pal, palette_OkabeIto[7]), ~ estimar_densidad(df = distribuciones, d = .x, color = .y)) |> 
  reduce(.f = `+`) + 
  plot_layout(ncol = 2) +
- plot_annotation(title    = "Distribución", 
+ plot_annotation(title    = "Distribuciones", 
                  subtitle = "Estimación de densidad no paramétrica") 
 @
+\caption{Distribuciones generadas con números aleatorios}
+   \label{fig:disrandom}
+\end{figure}
 
-<<>>=
-valor_esperado_fallas <- frecuencia_eventos |>
-  summarise(esperanza_fallas  = round(sum(fallas * prob_falla))) |> 
-  pull(esperanza_fallas)
+
+
+En una tabla podemos comparar los parámetros de los valores de la muestra contra los de
+los que fueron generados de forma aleatoria para evaluar que tan diferentes son.
+
+<<comparacion>>=
+resumir(eventos_n) |> 
+ bind_rows(resumir(sitios[3])) |> 
+ mutate(set = "original") |> 
+ bind_rows(resumir(distribuciones) |> 
+ mutate(set = "random")) |> 
+ relocate(set, .before = 1) |> 
+ tabla("Comparación valores variables originales vs distribuciones")
 @
+
+En la tabla \ref{tab:comparacion} vemos que las variables que siguen una distribución
+\emph{log-normal} (\va{operación} y \va{falla}) tiene una variación en la media y la
+desviación estándar, pero los valores máximos y mínimos se mantienen iguales.
+
+\subsection{Configurar simulación}
+
+ \begin{itemize}[itemsep=1ex]
+  \item \textbf{Población de sitios Tx (Q):} 150
+  \item \textbf{Fallas cuatrimestrales:} En la tabla \ref{tab:frecuencia} podemos ver que en
+  cuatro meses de evaluación, la cantidad de fallas totales fue de \textbf{68}.
+  \item \textbf{Cuatrimestres en un año:} Un año tiene 3 cuatrimestres.
+  \item \textbf{Lambda:} Tasa de fallas en un año sera de 68 fallas por la cantidad de
+  cuatrimestres, es decir, que en un año se espera que se den 204 fallas.
+  \item \textbf{Probabilidad de fallas (P):} Debido a que la cantidad de fallas que se pueden
+  presentar en un año sigue una distribución de Poisson, calcularemos de manera
+  \textbf{conservadora}, la posibilidad de que se den 150 fallas, es decir, al menos 1 falla
+  en toda la población de sitios Tx. 
+  \item \textbf{Tipo de cambio:} 7.78
+ \end{itemize}
 
 <<>>=
 poblacion_sitios_tx <- 150
@@ -296,75 +211,79 @@ prob_falla <- ppois(q = poblacion_sitios_tx, lambda, lower.tail = F)
 tipo_cambio <- 7.78
 @
 
-<<>>=
-simulacion <- dist |> 
- mutate(
-  voltaje = 120,
-  amp_adi = falla - operacion,
-  kwh_adi = ((amp_adi * voltaje * duracion) / 1e3),
-  costeve = costo_kwh * kwh_adi,
-  costopr = valor_esperado_fallas * costeve,
-  costo_t = ((costopr * poblacion_sitios_tx * cuatrimestres) / tipo_cambio)
-)
-@
 
 <<>>=
-simulacion <- dist |> 
+simulacion <- distribuciones |> 
  mutate(
   voltaje = 120,
   amp_adi = falla - operacion,
   kwh_adi = ((amp_adi * voltaje * duracion) / 1e3),
   costeve = costo_kwh * kwh_adi,
-  # costopr = valor_esperado_fallas * costeve,
   costo_t = ((costeve * poblacion_sitios_tx * prob_falla * cuatrimestres) / tipo_cambio)
 )
 @
 
+\subsection{Resultado Simulación}
 
+Aplicando el modelo matemático de la sección \nameref{sec:modeloteorico} obtenemos con
+100,000 repeticiones:
 
-<<>>=
+<<simulacion>>=
 simulacion |>
  mutate(across(where(is.numeric), round, 2)) |> 
- slice_sample(n = 15) |> 
- tabla("Resultados Simulación")
+ slice_sample(n = 10) |> 
+ tabla("Muestra aleatoria de los resultados de la simulación")
+@
+
+En la tabla \ref{tab:simulacion} vemos los resultados de la simulación con base al modelo
+matemático establecido.
+
+<<>>=
+sim <- simulacion |>
+ mutate(costo_t = costo_t/1e3)
+brk <- hist(sim$costo_t, plot = F)$breaks
+med <- mean(sim$costo_t)
+@
+
+\begin{figure}[H]
+<<resultado, fig.width=7>>=
+sim |> 
+ ggplot(aes(costo_t)) +
+ geom_bar(width = 0.98, fill = "#56B4E9") +
+ scale_x_binned(breaks = brk, labels = dol, 
+                name = "Costo en Miles de dólares [K]") +
+ geom_vline(xintercept = med, linetype = "dashed", color = "black", alpha = .3) +
+ scale_y_continuous(expand = c(0, 0)) + furia
+@
+\caption{Distribución de los costos en Miles de USD que podría haber en un año de operación si no se toman acciones}
+   \label{fig:res1}
+\end{figure}
+
+\section{Análisis Probabilístico}
+
+<<>>=
+resumir(sim$costo_t) |> tabla("Resumen de la variable Costos totales")
 @
 
 <<>>=
-dol <- dollar_format(accuracy = 0.1)
-brk <- hist(simulacion$costo_t, plot = F)$breaks
-med <- mean(simulacion$costo_t)
+ct <- resumir(sim$costo_t) |> pull(mean) |> round()
+costx <- sim$costo_t
 @
 
+En la tabla vemos que el costo promedio es de \Sexpr{ct} mil dólares
+
 <<>>=
-simulacion |> 
- ggplot(aes(x = costo_t, y = ..density..)) +
- geom_histogram(fill = "#56B4E9", size = .2, breaks = brk, color = "black") +
- geom_density(size = 1) +
- geom_vline(xintercept = med, color = "black", linetype = "dashed") +
- scale_x_continuous(name = "Utilidades en miles de dólares [K]", labels = dol, breaks = brk) +
- labs(title = "Distribución de las utilidades") + furia
+lillie.test(costx)
 @
 
 
 <<>>=
-mean(simulacion$costo_t)
-@
-
-<<>>=
-nf <- rnorm(n = nreps, mean = 117.33, sd = 47.4)
-lnf <- exp(nf)
-hist(lnf)
-@
-
-<<>>=
-g <- rlnormTrunc(n = nreps, meanlog = 102.7, sdlog = 43.71, min = 54.94, max = 234)
-g <- rlnormTruncAlt(n = nreps, mean = 102, cv = 0.4256699, min = 63, max = 256)
-h <- rlnorm2(n = nreps, mean = 102.7, sd = 43.71, min = 54.94, max = 234.1)
-@
-
-<<>>=
-hist(g)
+sim %>% 
+	imap_dfr(~ probar_normalidad(.x) %>%
+				mutate(var = .y)) %>% 
+	pivot_wider(names_from = "var", values_from = "p_value") %>% 
+	mutate(across(where(is.numeric), rd, 2)) %>% 
+	tabla(cap = "Pruebas no paramétricas de normalidad")
 @
 
 
- 

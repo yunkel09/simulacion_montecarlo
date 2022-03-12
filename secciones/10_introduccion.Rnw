@@ -72,9 +72,8 @@ pasillo frío y pasillo caliente. Debido a que los datos se recolectan con una
 frecuencia irregular, las gráficas crudas no muestran un patrón tan claro, pero
 al agrupar las mediciones por hora, es posible capturar la relación entre el
 tiempo y el ascenso o descenso de la temperatura.  Para efectos de modelado
-estos ciclos de enfriamiento son relevantes debido a que son los causantes de la
-estacionalidad horaria y hacen que el modelo seleccionado tome en cuenta estas
-variaciones.
+estos ciclos de enfriamiento son relevantes debido a que cuando se mantienen
+encendidos, diremos que estamos en modo \textbf{falla}.
 
 El estudio está diseñado con base al entendimientos de los ciclos de enfriamiento
 previamente descritos y de como la temperatura y humedad relativa oscila a lo
@@ -117,9 +116,12 @@ operación normal puede ser de varios días y al multiplicar esto por la cantida
 la cantidad de sitios durante un periodo de una año, tendremos un importante gasto que
 afecta el EBIDTA de la compañía.
 
-Un modelo probabilístico que ayude a determinar la distribución del impacto económico del
-consumo de energía eléctrica bajo estas condiciones, proporcionará a los tomadores de
-decisiones de una visión de más amplia en cuanto riesgo, así como asistir en la planificación
-de las capacidades óptimas y específicas para un determinado conjunto de condiciones de
-operación y así poder obtener ahorros en costos de operación.
+En este punto, con el contexto anterior, podemos establecer nuestra pregunta de investigación:
+\begin{shaded}
+ ¿hasta cuanto pueden ascender los costos de operación (OpEx) en el mediano plazo (1 año) en
+ los sitios de transmisión en concepto de energía eléctrica si no se toman acciones para
+ corregir las fallas en las unidades de enfriamiento?
+\end{shaded}
+
+
 
