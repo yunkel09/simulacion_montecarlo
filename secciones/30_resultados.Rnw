@@ -196,36 +196,73 @@ media_opera <- mean(eventos$operacion)
 desvi_opera <- sd(eventos$operacion)
 desvi_falla <- sd(eventos$falla)
 media_falla <- mean(eventos$falla)
+minimo_operacion <- min(eventos$operacion)
+maximo_operacion <- max(eventos$operacion)
+minimo_falla <- min(eventos$falla)
+maximo_falla <- max(eventos$falla)
 @
+
+<<>>=
+costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo)
+operacion <- rlnorm2(n = nreps, mean = media_opera, sd = desvi_opera, 
+                     min = minimo_operacion, max = maximo_falla)
+falla     <- rlnorm2(n = nreps, mean = media_falla, sd = desvi_falla, 
+                     min = minimo_falla, max = maximo_falla)
+duracion  <- runif(n  = nreps, min = min(eventos$duracion), max = max(eventos$duracion))
+@
+
+<<>>=
+costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo)
+operacion <- rlnormTrunc(n = nreps, meanlog = media_opera, sdlog = desvi_opera, min = minimo_operacion, max = maximo_falla)
+falla     <- rlnormTrunc(n = nreps, meanlog = media_falla, sdlog = desvi_falla, min = minimo_falla, max = maximo_falla)
+duracion  <- runif(n  = nreps, min = min(eventos$duracion), max = max(eventos$duracion))
+@
+
 
 
 <<>>=
-nom_vars <- c(names(eventos_n), names(sitios_n))
+# dist <- eventos_n |>
+#  select(-duracion) |>
+#  map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |>
+#  mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |>
+#  select(-var) |>
+#  pmap(rlnorm, n = nreps) |>
+#  append(list(dis_duracion, dis_costo)) |>
+#  set_names(nom_vars) |>
+#  bind_rows(.id = "var")
 @
 
-<<>>=
-costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo) |> as.numeric()
-operacion <- rnorm2(n = nreps, mean = media_opera, sd = desvi_opera) |> as.numeric()
-falla     <- rnorm2(n = nreps, mean = media_falla, sd = desvi_falla) |> as.numeric()
-duracion  <- runif(n  = nreps, min = 1, max = 36)
-@
 
+
+% <<>>=
+% media_costo <- mean(sitios$costo_kwh)
+% desvi_costo <- sd(sitios$costo_kwh)
+% media_opera <- mean(eventos$operacion)
+% desvi_opera <- sd(eventos$operacion)
+% desvi_falla <- sd(eventos$falla)
+% media_falla <- mean(eventos$falla)
+% @
+% 
+% 
+% <<>>=
+% nom_vars <- c(names(eventos_n), names(sitios_n))
+% @
+% 
+% <<>>=
+% costo_kwh <- rnorm2(n = nreps, mean = media_costo, sd = desvi_costo) |> as.numeric()
+% operacion <- rnorm2(n = nreps, mean = media_opera, sd = desvi_opera) |> as.numeric()
+% falla     <- rnorm2(n = nreps, mean = media_falla, sd = desvi_falla) |> as.numeric()
+% duracion  <- runif(n  = nreps, min = 1, max = 36)
+% @
+ 
 <<>>=
 dist <- tibble(operacion, falla, duracion, costo_kwh)
 @
-
-
+ 
 <<>>=
-# dist <- eventos_n |> 
-#  select(-duracion) |> 
-#  map_dfr(~ reparametrizar_rlnorm(.x), .id = "var") |> 
-#  mutate(sdlog = replace(sdlog, var == "duracion_hrs", 0.67)) |> 
-#  select(-var) |> 
-#  pmap(rlnorm, n = nreps) |> 
-#  append(list(dis_duracion, dis_costo)) |>  
-#  set_names(nom_vars) |> 
-#  bind_rows(.id = "var")
+
 @
+
 
 <<>>=
 dist |> 
@@ -272,6 +309,20 @@ simulacion <- dist |>
 @
 
 <<>>=
+simulacion <- dist |> 
+ mutate(
+  voltaje = 120,
+  amp_adi = falla - operacion,
+  kwh_adi = ((amp_adi * voltaje * duracion) / 1e3),
+  costeve = costo_kwh * kwh_adi,
+  # costopr = valor_esperado_fallas * costeve,
+  costo_t = ((costeve * poblacion_sitios_tx * prob_falla * cuatrimestres) / tipo_cambio)
+)
+@
+
+
+
+<<>>=
 simulacion |>
  mutate(across(where(is.numeric), round, 2)) |> 
  slice_sample(n = 15) |> 
@@ -279,24 +330,18 @@ simulacion |>
 @
 
 <<>>=
-cost <- simulacion$costo_t/1e3
 dol <- dollar_format(accuracy = 0.1)
-brk <- hist(cost, plot = F)$breaks
-med <- mean(cost)
-des <- sd(cost)
+brk <- hist(simulacion$costo_t, plot = F)$breaks
+med <- mean(simulacion$costo_t)
 @
 
 <<>>=
 simulacion |> 
- mutate(costo_t = costo_t/1e3) |> 
  ggplot(aes(x = costo_t, y = ..density..)) +
  geom_histogram(fill = "#56B4E9", size = .2, breaks = brk, color = "black") +
  geom_density(size = 1) +
  geom_vline(xintercept = med, color = "black", linetype = "dashed") +
- scale_x_continuous(name = "Utilidades en miles de dólares [K]", 
-                    labels = dol,
-                    breaks = seq(-400, 400, 100),
-                    limits = c(-400, 400)) +
+ scale_x_continuous(name = "Utilidades en miles de dólares [K]", labels = dol, breaks = brk) +
  labs(title = "Distribución de las utilidades") + furia
 @
 
@@ -306,10 +351,20 @@ mean(simulacion$costo_t)
 @
 
 <<>>=
-
+nf <- rnorm(n = nreps, mean = 117.33, sd = 47.4)
+lnf <- exp(nf)
+hist(lnf)
 @
 
+<<>>=
+g <- rlnormTrunc(n = nreps, meanlog = 102.7, sdlog = 43.71, min = 54.94, max = 234)
+g <- rlnormTruncAlt(n = nreps, mean = 102, cv = 0.4256699, min = 63, max = 256)
+h <- rlnorm2(n = nreps, mean = 102.7, sd = 43.71, min = 54.94, max = 234.1)
+@
 
+<<>>=
+hist(g)
+@
 
 
  

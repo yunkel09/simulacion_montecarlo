@@ -395,6 +395,7 @@ import::from(patchwork, plot_layout, plot_annotation)
 import::from(conectigo, cargar_fuentes)
 import::from(ggridges, geom_density_ridges_gradient)
 import::from(caret, nearZeroVar)
+import::from(EnvStats, rlnormTrunc)
 pacman::p_load(skimr, janitor, triangle, scales, fitdistrplus, tidyverse)
 
 # fuentes del paquete conectigo
@@ -404,7 +405,7 @@ cargar_fuentes()
 yunkel <- theme_cowplot(font_family = "yano") +
  theme(plot.margin   = unit(c(6, 1, 1, 1), "mm"),
        axis.title    = element_text(size = 10),
-       axis.text     = element_text(size = 8),
+       axis.text     = element_text(size = 6),
        plot.title    = element_text(size = 18),
        plot.subtitle = element_text(size = 12))
 
@@ -471,8 +472,15 @@ estimar_densidad <- function(df, d, color) {
 }
 
 # crear distribucion normal
-rnorm2 <- function(n, mean, sd) { mean + sd * scale(rnorm(n)) }
+rnorm2 <- function(n, mean, sd) { 
+  mean + sd * scale(rnorm(n)) |> 
+  as.numeric()
+}
 
+rlnorm2 <- function(n, mean, sd, min, max) {
+ mean + sd * scale(rlnormTrunc(n = n, meanlog = mean, sdlog = sd, min = min, max = max)) |> 
+  as.numeric()
+}
 
 # lista de funciones con pruebas no paramétricas para evaluar normalidad
 funciones <- list(
