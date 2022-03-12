@@ -8,9 +8,11 @@ incluyendo temperatura, humedad relativa, corriente, estado de la puerta, entre 
 
 \subsection{Sitios}
 
+
 <<>>=
-sitios |> 
- tabla(cap = "Sitios seleccionados para proyecto RETINA")
+# imprimir tabla de sitios
+sitios |> tabla(cap = "Sitios seleccionados para proyecto RETINA")
+
 @
 
 \ti{Diccionario}
@@ -34,9 +36,9 @@ cantidad de equipos es diferente.
 A continuación una muestra del dataset de eventos:
 
 <<>>=
-eventos |>
- slice_sample(n = 28) |> 
- tabla(cap = "Data Set Eventos")
+# imprimir tabla de eventos (una muestra)
+eventos |> slice_sample(n = 28) |> tabla(cap = "Data Set Eventos")
+
 @
 
  \begin{itemize}[itemsep=1ex]
@@ -67,10 +69,80 @@ consumo cuando ambas unidades trabajan simultáneamente.
 
 La columna tiempo es la medición del periodo bajo la condición de falla y está dado en horas.
 
+\subsection{Evaluar el tipo de distribución}
+
+En el proceso inicial de evaluar el tipo de distribuciones que seguían las variables, se
+observó que la duración tenía la forma de una distribución \emph{log-normal} o bien una
+distribución \emph{gamma}.  Una primera decisión de importancia que se tomó en el análisis
+fue considerar la duración de las fallas como una variable que sigue una distribución
+uniforme. Esto se debe a que hay muchos factores implicados que podrían determinar por cuanto
+tiempo dos unidades de enfriamiento trabajarán en conjunto hasta alcanzar uno de los dos
+posibles escenarios mencionados en la introducción.  Por ejemplo, si las unidades están
+relativamente nuevas o son unidades que reciben un correcto mantenimiento en términos de
+frecuencia y calidad, pues podríamos suponer que durarán más antes de falla que unidades un
+poco más antiguas y/o con poco mantenimiento.
+
+Las pruebas de bondad de ajuste se realizaron utilizando el paquete
+$\left \{fitdistrplus \right \}$ de \citep{R-fitdistrplus},
+sin embargo, se preparó una función para generalizar la bondad de ajuste a cualquier set de
+datos. El código es extenso, y puede verse en el apéndice \ref{appendix:allcode}.  Estas
+pruebas de tipo confirmatoria solo sirven para asistir al análisis exploratorio y jamás
+serán un sustituto de lo que las gráficas nos puedan decir.
+
+\subsection{Esperanza matemática vs probabilidad de falla}
+
+Con base a la muestra obtenida en el periodo de evaluación se agregó una columna con la
+frecuencia relativa.  El objetivo de esto es poder calcular la \textbf{esperanza matemática},
+la cual es una medida del punto central correcta \citep[pag. ~152]{newbold_estadistica_2008}.
+
+\begin{equation}
+   \bm{E\left ( X \right ) = \mu = \sum_{x}^{} xP(x)}
+   \label{esperanza}
+\end{equation}
+
+Se tomó la decisión de no utilizar el valor esperado como un valor constante a incluir dentro
+del modelo en sustitución de la probabilidad de obtener más de 150 fallas.  La razón de
+esto obedece más a que el valor se inflaría mucho y sería mucho más difícil de explicar a los
+tomadores de decisiones.
+
+\subsection{Distribución log-normal truncada}
+
+En la generación de las distribuciones utilizando números aleatorios se utilizó la distribución
+\emph{log-normal}.  El propósito de crear distribuciones log-normales es que en definitiva
+el comportamiento de operación y falla de las unidades de enfriamiento siguen una distribución
+de cola gruesa, sesgada a la derecha. Esto significa que incluye valores mucho menos
+frecuentes que la distribución normal.
+
+Crear números aleatorios para una distribución log-normal no es trivial, pues requiere en el
+mejor de los casos una
+re-parametrización\footnote{reparametrización log-normal \url{https://bit.ly/3HYpx5P}}.  Aun
+tomando en cuenta la reparametrización los resultados son inestables y no fue posible permitir
+establecer valores máximos y mínimos para acotar las distribuciones a los valores observados
+en la muestra.  
+
+La solución fue utilizar el paquete $\left \{EnvStats \right \}$ de \citep{R-EnvStats} para
+poder definir los límites superior e inferior de las distribuciones. La generación de números
+aleatorios no garantiza que la media y la desviación estándar sean las mismas que la de la
+muestra observada, sin embargo, se dió más importancia a los límites reales.
+
+\subsection{Distribución normal}
+
+Para la distribución normal se utilizó la función \texttt{rnorm} ajustada. El propósito de
+esta técnica es garantizar que la media y la desviación estándar fueran exactamente los
+mismos que los de la muestra.  El ajuste es muy sencillo y no interfiere en ningún aspecto
+relacionado con la generación de los números aleatorios, es decir, la distribución resultante
+es totalmente normal.
+
 \section{Modelo Matemático}
 \label{sec:modeloteorico}
 
-Utilizaremos un método \emph{top-down} para definr las ecuaciones.
+Utilizaremos un método \emph{top-down} para definir las ecuaciones.  Los modelos fueron
+definidos de forma inicial con base al conocimiento que se tenía del problema y de los
+métodos comúnmente aceptados en los casos de negocio.  Para validar el modelo matemático
+definido se tuvieron entrevistas con dos SMEs debido a que el
+conocimiento específico en el ámbito de la energía eléctrica era muy poco.
+\footnote{Un científico de datos debería siempre de consultar a un SME:
+\url{https://bit.ly/3JeYmFm}}
 
 \ti{Costo total en USD por año debido a fallas}
 

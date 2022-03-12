@@ -172,6 +172,13 @@ ppois(2, 4.2)
  
 
 
+A través de una prueba de bondad de ajuste determinamos que la variable respuesta \va{income}
+no sigue una distribución normal. El hecho de que la variable respuesta no esté normalmente
+distribuida no limita el uso de un modelo de regresión lineal para representar la relación
+entre las variables \va{income} y \va{age}. Aunque el alcance de este trabajo no incluye
+encontrar una solución al problema de la heterocedasticidad ea nivel de modelado, podemos
+plantear dos posibles soluciones: transformar la variable respuesta utilizando.
+
 
 
 

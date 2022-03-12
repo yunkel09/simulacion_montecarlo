@@ -10,11 +10,11 @@
 	
 	% {\huge\bfseries \titulo\par}
 \begin{center}
-{\huge\bfseries Aplicación de simulación Monte-Carlo para modelar el costo de energía
+{\huge\bfseries Aplicación de simulación Monte Carlo para modelar el costo de energía
 eléctrica en sitios de transmisión bajo condiciones de falla}
 \end{center}	
 	
-	\vspace{1.5cm}
+	\vspace{1.2cm}
 	
 	{\LARGE \autor\par}
 	\vspace{0.2cm}
@@ -25,18 +25,18 @@ eléctrica en sitios de transmisión bajo condiciones de falla}
 \textbf{Resumen}
 
 \justify	
-A través de una prueba de bondad de ajuste determinamos que la variable respuesta \va{income}
-no sigue una distribución normal. El hecho de que la variable respuesta no esté normalmente
-distribuida no limita el uso de un modelo de regresión lineal para representar la relación
-entre las variables \va{income} y \va{age}. Aunque el alcance de este trabajo no incluye
-encontrar una solución al problema de la heterocedasticidad ea nivel de modelado, podemos
-plantear dos posibles soluciones: transformar la variable respuesta utilizando.
+Se aplicó el método Monte Carlo para simular los costos de energía eléctrica en
+sitios de transmisión de la red Tigo cuando las unidades de aire acondicionados trabajan de
+forma conjunto. Se construyó un modelo matemático y los resultados indican que en promedio se
+pueden tener costos de USD20K por año si no se toma ninguna acción y que los beneficios de
+implementar un proyecto para corregir el problema podría ir aproximadamente desde los 2K hasta
+los USD37K. La hipótesis inicial de que estos costos podrían ser de USD30K o más tiene una
+probabilidad de aproximadamente el 13\%.
+\vspace{0.4cm}
 
-\vspace{0.5cm}
-
-\textbf{Palabras clave:} Análisis Exploratorio, Análisis Confirmatorio, Modelado
+\textbf{Palabras clave:} Análisis Exploratorio, Análisis Confirmatorio, Simulación Monte Carlo
 	
-	\vspace{0.5cm}
+	\vspace{0.4cm}
 	\centering
  \includegraphics[width=0.3\textwidth]{logo_tigo}
 

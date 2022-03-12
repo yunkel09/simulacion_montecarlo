@@ -426,13 +426,11 @@ furia <- yunkel +
        panel.grid.major.y = element_line(color = "#e5e5e5"))
 
 # scales facilita el formato en los gráficos
-porcentaje <- label_percent(decimal.mark = ".", suffix = "%", accuracy = 0.001)
+porcentaje <- label_percent(decimal.mark = ".", suffix = "%", accuracy = 0.1)
 dol <- dollar_format(accuracy = 0.1)
 
 # establecer tema por defecto
 theme_set(yunkel)
-
-
 
 # crear tablas latex
 tabla <- function(df, cap = "prueba") {
@@ -448,6 +446,7 @@ resumir <- function(.df) {
  my_skim <- skim_with(
   base = NULL,
   numeric = sfl(mean = ~ mean(., na.rm = TRUE),
+                median = ~ median(., na.rm = TRUE),
                 sd   = ~ sd(., na.rm = TRUE),
                 min  = ~ min(., na.rm = TRUE),
                 max  = ~ max(., na.rm = TRUE)), append = F)
@@ -497,27 +496,7 @@ rnorm2 <- function(n, mean, sd) {
   as.numeric()
 }
 
-
-# lista de funciones con pruebas no paramétricas para evaluar normalidad
-funciones <- list(
- # shapiro_wilk       = function(x) shapiro.test(x),
- jarque_bera        = function(x) JarqueBeraTest(x, robust = F),
- pearson            = function(x) pearson.test(x), 
- shapiro_francia    = function(x) sf.test(x),
- kolgomoro_smirnov  = function(x) lillie.test(x)
-)
-
-# pasar pruebas de normalidad no paramétrica
-probar_normalidad <- function(vector) {
- funciones %>% 
-  map(exec, x = vector) %>% 
-  map_df(tidy) %>% 
-  select(method, p_value = p.value) %>% 
-  arrange(desc(p_value))
-}
-
 # generalizar pruebas de bondad de ajuste
-
 ## los data.frames deben convertirse a lista de vectores numéricos
 convertir_a_lista <- function(dataframe_num) {
  dataframe_num |> select(!any_of(vars_to_remove(dataframe_num))) |>
@@ -650,8 +629,8 @@ frecuencia_eventos <- sitios |>
 <<child='secciones/00_portada.Rnw'>>=
  
 @
-% \renewcommand{\contentsname}{Índice}
-% \tableofcontents
+\renewcommand{\contentsname}{Índice}
+\tableofcontents
 
 % 
 \addtocontents{toc}{\protect\thispagestyle{empty}} % quitar número de página
@@ -672,12 +651,25 @@ frecuencia_eventos <- sitios |>
 
 @
 
+<<child='secciones/40_discusion.Rnw'>>=
+
+@
+
 <<child='secciones/60_apendice.Rnw'>>=
 
 @
 
 
 <<child='secciones/50_bibliografia.Rnw'>>=
+
+@
+
+<<child='secciones/70_figuras.Rnw'>>=
+
+@
+
+
+<<child='secciones/80_tablas.Rnw'>>=
 
 @
 
