@@ -1,0 +1,182 @@
+---
+output:
+  xaringan::moon_reader:
+    seal: false
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      ratio: '16:9'
+      countIncrementalSlides: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(echo        = FALSE, 
+                      include     = TRUE,
+                      cache       = FALSE,
+                      message     = FALSE,
+                      warning     = FALSE, 
+                      comment     = NA, 
+                      highlight   = TRUE,
+                      strip.white = TRUE, 
+                      fig.width   = 13, 
+                      fig.height  = 7, 
+                      fig.align   = "center",
+                      dev         = "svg")
+```
+
+
+```{r, include=FALSE}
+library(knitr)
+```
+
+
+
+<!-- class: inverse, center, middle -->
+class: left, middle, inverse
+background-image: url(imagenes/telco.jpg)
+background-size: cover
+
+# Simulación Monte Carlo
+
+<!-- <img src="images/hex-tidygraph.png" width="115px"/> -->
+<!-- <img src="images/hex-ggraph.png" width="100px"/> -->
+<!-- <img src="images/hex-tidyverse.png" width="100px"/> -->
+<!-- <img src="images/hex-shiny.png" width="100px"/> -->
+
+.large[William Chavarría | 15 Mar 2022]
+
+---
+
+# Resumen
+
+
+--
+### 1. Actualmente en la solicitudes de CaPeX se nos recorta o cuestiona mucho debido a que nuestra estrategia se basa en establecer <span style="background-color: #FFFF00">**supuestos**</span>, sin analizar y establecer detalladamente los riesgos implícitos.</br></br>
+--
+2. El análisis de riesgos con el método Montecarlo consiste en una simulación de diferentes variables para poder analizar y medir cuantitativamente los riesgos que pueden aparecer durante el proyecto.</br></br>
+--
+3. Usar Monte Carlo nos permitirá introducir el riesgo en la valoración de los proyectos de inversión, al medir y cuantificar las posibles amenazas, haciendo que sea más fácil evitarlas o mitigar su impacto.</br>
+--
+---
+
+# Agenda
+<br/>
+## 1. <span style="background-color: #FFFF00">**¿Cómo hacemos los cálculos actualmente?**</span>
+
+## 2. ¿Cómo funciona la simulación Monte Carlo?
+
+## 3. ¿Por qué debemos empezar a usarlo?
+
+## 4. Recomendaciones
+
+---
+background-image: url("imagenes/kwh.svg")
+background-size: contain
+class: .left[]
+
+## Hacemos estimaciones sin considerar la variación. Ej:
+
+---
+
+# Agenda
+<br/>
+
+## 1. ¿Cómo hacemos los cálculos actualmente?
+
+## 2. <span style="background-color: #FFFF00">**¿Cómo funciona la simulación Monte Carlo?**</span>
+
+## 3. ¿Por qué debemos empezar a usarlo?
+
+## 4. Recomendaciones
+
+---
+
+## Genera números aleatorios simulando las distribuciones de las variables de nuestro modelo!
+
+.pull-left[
+![que nota](imagenes/monte.png)
+]
+
+**En otras palabras:**
+
+.pull-right[
+
+- Permite tener en cuenta para el análisis un <span style="background-color: #FFFF00">**elevado número de escenarios aleatorios**</span>, así que se pueden realizar
+análisis que se ajusten a la variabilidad real de las variables consideradas.
+
+- La aplicación de esta técnica se basa en la identificación de las variables que se
+consideran más significativas.
+]
+
+---
+
+# Agenda
+<br/>
+
+## 1. ¿Cómo hacemos los cálculos actualmente?
+
+## 2. ¿Cómo funciona la simulación Monte Carlo?
+
+## 3. <span style="background-color: #FFFF00">**¿Por qué debemos empezar a usarlo?**</span>
+
+## 4. Recomendaciones
+
+---
+# Porque no es correcto dar un valor determinado para el costo de un proyecto
+
+.pull-left[
+![que nota](imagenes/monte0.png)
+
+]
+
+.pull-right[
+
+- Lo más correcto sería hablar de <span style="background-color: #FFFF00">**un valor medio y una variabilidad**</span> para el costo y la duración expresados en términos de
+probabilidades.
+
+- Montecarlo permite calcular el costo y duración con base a
+<span style="background-color: #FFFF00">**un determinado grado de confianza**</span>, y así
+determinar en que medida nuestra planificación es realista, y va a conseguir los objetivos
+del proyecto.
+
+- Esto significa determinar en qué porcentaje de las simulaciones realizadas, el plazo y el
+costo total es menor a los objetivos del proyecto.
+
+]
+
+---
+
+# Agenda
+<br/>
+
+## 1. ¿Cómo hacemos los cálculos actualmente?
+
+## 2. ¿Cómo funciona la simulación Monte Carlo?
+
+## 3. ¿Por qué debemos empezar a usarlo?
+
+## 4. <span style="background-color: #FFFF00">**Recomendaciones**</span>
+
+---
+# ¿Cómo lo ponemos en marcha?
+</br>
+
+
+--
+## - Empezar con un ejemplo sencillo que esté validado por un experto conocedor de esta técnica.</br></br>
+--
+- Validar con el área de finanzas si hay antecedentes de uso a nivel país o región.</br></br>
+--
+- Realizar el primer ejercicio con un caso de negocio y someterlo a revisión de aprobadores.</br></br>
+
+---
+background-image: url("imagenes/tigo_1.svg")
+background-size: cover
+class: center, middle, inverse
+
+
+
